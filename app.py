@@ -7,16 +7,20 @@ import os
 from sentence_transformers import SentenceTransformer
 
 # ✅ Ollama API call
-def generate_answer(prompt, model_name="mistral"):
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": model_name,
-            "prompt": prompt,
-            "stream": False
-        }
+import openai
+
+openai.api_key = st.secrets["OPENAI_API_KEY"]  # Reads API key from Streamlit secrets
+
+def generate_answer(prompt, model_name="gpt-3.5-turbo"):
+    response = openai.ChatCompletion.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": "You are a helpful multilingual assistant. Answer in the same language as the question."},
+            {"role": "user", "content": prompt}
+        ]
     )
-    return response.json()["response"].strip()
+    return response["choices"][0]["message"]["content"].strip()
+
 
 # ✅ FAISS + embedder
 @st.cache_resource
