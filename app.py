@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer
 # ✅ Ollama API call
 import openai
 
-openai.api_key = st.secrets["OPENAI_API_KEY"]  # Reads API key from Streamlit secrets
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 def generate_answer(prompt, model_name="gpt-3.5-turbo"):
     response = openai.ChatCompletion.create(
