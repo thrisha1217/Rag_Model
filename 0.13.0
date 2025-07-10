@@ -1,0 +1,11 @@
+Requirement already satisfied: optree in c:\users\jajal\appdata\local\programs\python\python310\lib\site-packages (0.12.1)
+Collecting optree
+  Downloading optree-0.16.0-cp310-cp310-win_amd64.whl.metadata (31 kB)
+Requirement already satisfied: typing-extensions>=4.6.0 in c:\users\jajal\appdata\local\programs\python\python310\lib\site-packages (from optree) (4.12.2)
+Downloading optree-0.16.0-cp310-cp310-win_amd64.whl (304 kB)
+Installing collected packages: optree
+  Attempting uninstall: optree
+    Found existing installation: optree 0.12.1
+    Uninstalling optree-0.12.1:
+      Successfully uninstalled optree-0.12.1
+Successfully installed optree-0.16.0
