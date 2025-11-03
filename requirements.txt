@@ -4,4 +4,4 @@ faiss-cpu
 numpy
 pandas
 sentence-transformers
-openai>=1.0.0
+openai
