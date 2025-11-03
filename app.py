@@ -1,72 +1,44 @@
 import streamlit as st
 import requests
-import faiss
-import numpy as np
-import pandas as pd
-import os
-from sentence_transformers import SentenceTransformer
+# Add the OpenAI library import
+from openai import OpenAI  # If using OpenAI
 
-# ✅ Ollama API call
-def generate_answer(prompt, model_name="mistral"):
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": model_name,
-            "prompt": prompt,
-            "stream": False
-        }
-    )
-    return response.json()["response"].strip()
-
-# ✅ FAISS + embedder
+# Initialize the client outside the function for caching benefits
 @st.cache_resource
-def load_embedder_and_index():
-    embedder = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+def get_openai_client():
+    # Access the API key securely from Streamlit secrets
+    api_key = st.secrets.get("OPENAI_API_KEY") 
+    if not api_key:
+        st.error("OPENAI_API_KEY secret not found. Please set it in Streamlit Secrets.")
+        return None
+    
+    # Initialize the client
+    client = OpenAI(api_key=api_key)
+    return client
 
-    data_dir = "comment_data"
-    files = [f"{data_dir}/{f}" for f in os.listdir(data_dir) if f.endswith("_comments.csv")]
-    df = pd.concat([pd.read_csv(f) for f in files])
-    posts = df["text"].dropna().tolist()
+def generate_answer(prompt, model_name="gpt-3.5-turbo"):
+    # 🚨 DELETE the old Ollama code:
+    # response = requests.post(
+    #    "http://localhost:11434/api/generate",
+    #    json={"model": model_name, "prompt": prompt}
+    # )
 
-    embeddings = embedder.encode(posts, convert_to_numpy=True)
-    dimension = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(embeddings)
-    id_to_text = {i: t for i, t in enumerate(posts)}
+    client = get_openai_client()
+    if not client:
+        return "Error: LLM client failed to initialize.", ""
+        
+    try:
+        # Use the OpenAI API for chat completion
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": "You are a helpful RAG model."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"An API error occurred: {e}", ""
 
-    return embedder, index, id_to_text
-
-# ✅ RAG-based response with multilingual support
-def rag_response(question, embedder, index, id_to_text):
-    q_embed = embedder.encode([question], convert_to_numpy=True)
-    D, I = index.search(q_embed, 5)
-    context = "\n".join([id_to_text[i] for i in I[0]])
-
-    prompt = f"""You are an expert assistant that answers questions based on social media posts in the same language as the question (either English or German).
-
-Context:
-{context}
-
-Question: {question}
-Answer (in the same language):"""
-
-    answer = generate_answer(prompt)
-    return answer, context
-
-# ✅ Streamlit UI
-st.set_page_config(page_title="🚗 AMG Chatbot", layout="centered")
-st.title("🚗 Mercedes-AMG Feedback Chatbot (Multilingual)")
-st.markdown("Ask anything about AMG — in **English** or **German**!")
-
-question = st.text_input("Your question (English or German):")
-
-if st.button("Generate Answer"):
-    with st.spinner("Thinking..."):
-        embedder, index, id_to_text = load_embedder_and_index()
-        answer, context = rag_response(question, embedder, index, id_to_text)
-
-        st.subheader("💬 Answer")
-        st.success(answer)
-
-        st.subheader("📄 Retrieved Snippets")
-        st.code(context)
+# ... rest of your Streamlit code ...
